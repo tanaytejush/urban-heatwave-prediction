@@ -1,62 +1,43 @@
-# Urban Heatwave Prediction
+# Urban Heatwave Prediction — Delhi
 
-**Hyper-local short-term heatwave prediction for Delhi using a hybrid Random Forest + Graph Convolutional Network (GCN), fused with MODIS satellite Land Surface Temperature.**
+## Problem Statement
 
-> Author: **Tanay Tejush** · GitHub: [@tanaytejush](https://github.com/tanaytejush)
-> License: MIT
+Delhi experiences extreme heat events that kill hundreds of people each year. Existing national weather forecasts operate at too coarse a resolution to be actionable — they tell a city official that "Delhi will be hot," not which neighbourhoods will hit dangerous thresholds in the next 48 hours. This project produces hyper-local, short-term heatwave predictions at the urban grid level, giving decision-makers enough lead time to deploy targeted interventions.
 
----
+## Who It's For
 
-## Overview
+This tool is built for **urban planners and city health officials** — not data scientists. The end users are people who need to decide where to open cooling centres, which districts to prioritise for early warnings, and how to allocate emergency health resources before a heat event peaks. The interface was designed so that someone without a machine learning background can open it, read the forecast, and act on it.
 
-An urban microclimate digital twin that forecasts zone-level temperature across a 25×24 grid over Delhi (600 zones, ~2 km resolution) up to 6 hours ahead and surfaces heatwave alerts.
+## Key Product Decisions
 
-- **Temporal model** — Random Forest regressor on hourly weather (temperature, humidity, wind).
-- **Spatial model** — 2-layer GCN that refines RF predictions using a 4-neighbour zone graph and Urban Heat Island (UHI) offsets.
-- **Satellite layer** — MODIS MOD11A1 Land Surface Temperature integration (HDF parsing + physically-calibrated Delhi LST generation).
-- **Dashboard** — Streamlit app with forecast, animated spatial map, RF vs RF+GCN comparison, satellite LST, and alert tabs.
+**Why combine Random Forest and Graph Convolutional Networks?**
+A standalone Random Forest would treat each grid cell as independent — it learns from temperature, humidity, and land use features, but ignores the fact that a heat island in one block radiates into adjacent blocks. A GCN captures those spatial neighbourhood dependencies across the urban graph. The hybrid model gets the interpretability and speed of RF for feature-level signals plus the spatial propagation awareness of GCN. Keeping both models rather than choosing one was a deliberate tradeoff: RF handles feature importance cleanly for stakeholder explainability; GCN handles the urban heat island cascade that RF misses.
 
-## Project structure
+**Why NASA MODIS LST satellite data?**
+Ground weather stations in Delhi are sparse and unevenly distributed — placing a sensor network at grid resolution would be prohibitively expensive. MODIS Land Surface Temperature is freely available at 1km resolution and updated daily, making it the only practical source for dense spatial coverage. This was a cost and feasibility decision as much as a technical one.
 
-```
-urban-heatwave-prediction/
-├── src/                          # Source code
-│   ├── app.py                    # Streamlit dashboard
-│   ├── model.py                  # Random Forest temporal model
-│   ├── gcn_model.py              # Graph Convolutional Network
-│   ├── train_hybrid.py           # Hybrid RF+GCN training pipeline
-│   ├── modis_processor.py        # MODIS LST integration
-│   └── fetch_historical_data.py  # Open-Meteo data fetcher
-├── data/                         # Input datasets (CSV, GeoJSON, HDF*)
-├── models/                       # Trained model weights & scalers
-├── notebooks/                    # Jupyter exploration
-├── docs/                         # Project explanation
-├── requirements.txt
-├── LICENSE
-└── README.md
-```
-*The raw MODIS `.hdf` tile is gitignored (regenerate via the link in `docs/`).*
+**Why Streamlit for the dashboard?**
+The tool was not built for research publication — it was built to be opened in a browser by a non-technical official in a heat emergency. Streamlit allowed rapid iteration on the UI without a frontend engineering bottleneck, and produces a clean enough interface for stakeholder demos without custom web development.
 
-## Quick start
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Prediction models | Random Forest + Graph Convolutional Network (hybrid ensemble) |
+| Satellite data | NASA MODIS Land Surface Temperature (LST) |
+| Data processing | Python, pandas, NumPy |
+| Spatial graph | NetworkX, PyTorch Geometric |
+| Dashboard | Streamlit |
+| Notebooks | Jupyter |
+
+## How To Run
 
 ```bash
-# 1. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# 2. (Optional) Fetch a fresh year of weather data
-python src/fetch_historical_data.py
-
-# 3. Train the hybrid RF+GCN model
-python src/train_hybrid.py
-
-# 4. Launch the dashboard
-streamlit run src/app.py
+# Launch the Streamlit dashboard
+streamlit run app.py
 ```
 
-## Tech stack
-
-Python · scikit-learn · PyTorch · GeoPandas · Streamlit · Plotly · pyhdf
-
-## License
-
-MIT © 2026 Tanay Tejush — see [LICENSE](LICENSE).
+The dashboard loads pre-trained model weights and the most recent MODIS LST tile. No retraining is required to view predictions. To retrain, run the notebooks in order inside `/notebooks`.
