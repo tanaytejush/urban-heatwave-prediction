@@ -41,3 +41,8 @@ streamlit run app.py
 ```
 
 The dashboard loads pre-trained model weights and the most recent MODIS LST tile. No retraining is required to view predictions. To retrain, run the notebooks in order inside `/notebooks`.
+
+
+---
+
+<sub>Made by [tanaytejush](https://github.com/tanaytejush)</sub>
